@@ -1,31 +1,26 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Daftar Kehadiran Pimpinan</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f9f9f9; }
-    h2 { color: #333; text-align: center; margin-bottom: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f2f2f2; }
+    h2 { text-align: center; color: #333; }
     table {
-      border-collapse: collapse;
-      width: 100%;
-      max-width: 600px;
+      width: 80%;
       margin: 0 auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-collapse: collapse;
       background: white;
-      border-radius: 8px;
-      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     th, td {
-      padding: 12px 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
       text-align: center;
-      border-bottom: 1px solid #ddd;
     }
     th {
       background-color: #4CAF50;
       color: white;
-      font-weight: 600;
     }
     tr:hover {
       background-color: #f1f1f1;
@@ -43,47 +38,38 @@
       </tr>
     </thead>
     <tbody>
-      <tr><td colspan="2">Loading data...</td></tr>
+      <tr><td colspan="2">Loading...</td></tr>
     </tbody>
   </table>
 
   <script>
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(fetchData);
+    google.charts.load('current', {'packages':['table']});
+    google.charts.setOnLoadCallback(drawTable);
 
-    function fetchData() {
-      const spreadsheetId = '1Q8RtVeK0ElCqA92tJMBSwxkniTpqgg2eSSm-wInUmvA';
-      const query = encodeURIComponent('SELECT A, B'); // Kolom A dan B
-      const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tq=${query}`;
+    function drawTable() {
+      const query = new google.visualization.Query(
+        'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJkW2ZYEWEqZnGcUhf58HIlg-8vr1Yonnu-_uRaKZRcqinxjL_Owo5YbN0IL4vkUqekLhXSP98a2Tf/gviz/tq?gid=0&headers=1'
+      );
 
-      fetch(url)
-        .then(res => res.text())
-        .then(dataText => {
-          // Google Visualization API mengembalikan data bukan JSON biasa,
-          // kita harus parse manual
-          const jsonData = JSON.parse(dataText.substring(47, dataText.length - 2));
+      query.send(function(response) {
+        if (response.isError()) {
+          document.querySelector("#attendanceTable tbody").innerHTML = '<tr><td colspan="2">Gagal memuat data 😵</td></tr>';
+          console.error('Error fetching data:', response.getMessage());
+          return;
+        }
 
-          const tableBody = document.querySelector('#attendanceTable tbody');
-          tableBody.innerHTML = ''; // Clear loading
+        const data = response.getDataTable();
+        const numRows = data.getNumberOfRows();
+        const tbody = document.querySelector("#attendanceTable tbody");
+        tbody.innerHTML = "";
 
-          jsonData.table.rows.forEach(row => {
-            const nama = row.c[0] ? row.c[0].v : '';
-            const status = row.c[1] ? row.c[1].v : '';
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${nama}</td><td>${status}</td>`;
-            tableBody.appendChild(tr);
-          });
-
-          if(jsonData.table.rows.length === 0){
-            tableBody.innerHTML = '<tr><td colspan="2">Data kosong</td></tr>';
-          }
-        })
-        .catch(err => {
-          const tableBody = document.querySelector('#attendanceTable tbody');
-          tableBody.innerHTML = `<tr><td colspan="2" style="color:red;">Gagal memuat data.</td></tr>`;
-          console.error('Error:', err);
-        });
+        for (let i = 0; i < numRows; i++) {
+          const nama = data.getValue(i, 0);
+          const status = data.getValue(i, 1);
+          const row = `<tr><td>${nama}</td><td>${status}</td></tr>`;
+          tbody.innerHTML += row;
+        }
+      });
     }
   </script>
 </body>
